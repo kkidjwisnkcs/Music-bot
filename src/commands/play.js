@@ -1,4 +1,4 @@
-const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
+const { SlashCommandBuilder, EmbedBuilder, PermissionsBitField } = require('discord.js');
 const { getOrCreatePlayer } = require('../utils/getPlayer');
 
 module.exports = {
@@ -14,14 +14,35 @@ module.exports = {
   async execute(interaction, client) {
     await interaction.deferReply();
 
-    const voiceChannel = interaction.member.voice?.channel;
+    const member = interaction.member;
+    const voiceChannel = member.voice?.channel;
+
     if (!voiceChannel) {
-      return interaction.editReply({ content: '❌ You need to be in a voice channel!' });
+      return interaction.editReply({ content: '❌ You need to be in a voice channel first!' });
     }
 
-    const perms = voiceChannel.permissionsFor(interaction.client.user);
-    if (!perms.has('Connect') || !perms.has('Speak')) {
-      return interaction.editReply({ content: '❌ I need **Connect** and **Speak** permissions in your voice channel!' });
+    // Check bot permissions in that specific channel
+    const botMember = interaction.guild.members.me;
+    const perms = voiceChannel.permissionsFor(botMember);
+
+    if (!perms) {
+      return interaction.editReply({ content: '❌ I cannot read permissions for that voice channel.' });
+    }
+
+    const missing = [];
+    if (!perms.has(PermissionsBitField.Flags.Connect)) missing.push('Connect');
+    if (!perms.has(PermissionsBitField.Flags.Speak)) missing.push('Speak');
+
+    if (missing.length > 0) {
+      return interaction.editReply({
+        content: `❌ I'm missing these permissions in **${voiceChannel.name}**: **${missing.join(', ')}**\n` +
+          `Please give me those permissions in that voice channel's settings.`
+      });
+    }
+
+    // User limit check
+    if (voiceChannel.userLimit > 0 && voiceChannel.members.size >= voiceChannel.userLimit) {
+      return interaction.editReply({ content: `❌ **${voiceChannel.name}** is full! (${voiceChannel.members.size}/${voiceChannel.userLimit})` });
     }
 
     const query = interaction.options.getString('query');
@@ -49,14 +70,11 @@ module.exports = {
       const embed = new EmbedBuilder()
         .setColor(0x1DB954)
         .setTitle('📋 Playlist Added!')
-        .setDescription(`Added **${result.count}** songs to the queue.\nFirst up: **${result.first.title}**`)
-        .setFooter({ text: `Queue position: ${player.queue.length - result.count + 1}–${player.queue.length + (player.currentSong ? 0 : -1)}` });
-
+        .setDescription(`Added **${result.count}** songs to the queue.\nFirst up: **${result.first.title}**`);
       await player.start();
       return interaction.editReply({ embeds: [embed] });
     }
 
-    // If nothing is playing, start playback
     const wasIdle = !player.isPlaying && !player.isPaused;
     await player.start();
 
