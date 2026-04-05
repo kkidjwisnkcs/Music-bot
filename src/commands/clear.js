@@ -1,18 +1,11 @@
 const { SlashCommandBuilder } = require('discord.js');
-const { getPlayer } = require('../utils/getPlayer');
-
 module.exports = {
-  data: new SlashCommandBuilder()
-    .setName('clear')
-    .setDescription('Clear the queue (keeps current song playing)'),
-
+  data: new SlashCommandBuilder().setName('clear').setDescription('Clear the queue (keeps current song)'),
   async execute(interaction, client) {
-    const player = getPlayer(client, interaction.guild.id);
-    if (!player || !player.queue.length) {
-      return interaction.reply({ content: '❌ The queue is already empty!', ephemeral: true });
-    }
-    const count = player.queue.length;
-    player.queue = [];
-    return interaction.reply({ content: `🗑️ Cleared **${count}** song(s) from the queue. Current song will finish.` });
+    const queue = client.distube.getQueue(interaction.guild);
+    if (!queue || queue.songs.length < 2) return interaction.reply({ content: '❌ Queue is already empty!', ephemeral: true });
+    const count = queue.songs.length - 1;
+    queue.songs.splice(1);
+    interaction.reply(`🗑️ Cleared **${count}** song(s) from the queue.`);
   },
 };
