@@ -1,18 +1,12 @@
 const { SlashCommandBuilder } = require('discord.js');
-const { getPlayer } = require('../utils/getPlayer');
-
 module.exports = {
-  data: new SlashCommandBuilder()
-    .setName('skip')
-    .setDescription('Skip the current song'),
-
+  data: new SlashCommandBuilder().setName('skip').setDescription('Skip the current song'),
   async execute(interaction, client) {
-    const player = getPlayer(client, interaction.guild.id);
-    if (!player || (!player.isPlaying && !player.isPaused)) {
-      return interaction.reply({ content: '❌ Nothing is playing right now!', ephemeral: true });
-    }
-    const skipped = player.currentSong?.title || 'Unknown';
-    player.skip();
-    return interaction.reply({ content: `⏭️ Skipped **${skipped}**` });
+    const queue = client.distube.getQueue(interaction.guild);
+    if (!queue) return interaction.reply({ content: '❌ Nothing is playing!', ephemeral: true });
+    try {
+      await queue.skip();
+      interaction.reply('⏭️ Skipped!');
+    } catch { interaction.reply({ content: '❌ Cannot skip — no next song.', ephemeral: true }); }
   },
 };
