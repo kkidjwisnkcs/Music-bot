@@ -16,7 +16,7 @@ class MusicPlayer {
     this.audioPlayer = createAudioPlayer();
     this.connection = null;
     this.volume = 0.5;
-    this.loop = 'off'; // 'off', 'song', 'queue'
+    this.loop = 'off';
     this.textChannel = null;
     this._currentResource = null;
 
@@ -34,7 +34,7 @@ class MusicPlayer {
   }
 
   async join(voiceChannel) {
-    // If already connected to correct channel, reuse
+    // Reuse existing connection to same channel
     if (
       this.connection &&
       this.connection.state.status !== VoiceConnectionStatus.Destroyed &&
@@ -43,36 +43,54 @@ class MusicPlayer {
       return this;
     }
 
-    // Destroy old connection if exists
+    // Destroy stale connection
     if (this.connection) {
       try { this.connection.destroy(); } catch {}
       this.connection = null;
     }
 
+    console.log(`[Voice] Attempting to join channel ${voiceChannel.id} (${voiceChannel.name}) in guild ${voiceChannel.guild.id}`);
+
     this.connection = joinVoiceChannel({
       channelId: voiceChannel.id,
       guildId: voiceChannel.guild.id,
       adapterCreator: voiceChannel.guild.voiceAdapterCreator,
-      selfDeaf: true,
+      selfDeaf: false,
+      selfMute: false,
+    });
+
+    // Log state changes for debugging
+    this.connection.on('stateChange', (oldState, newState) => {
+      console.log(`[Voice] State: ${oldState.status} → ${newState.status}`);
     });
 
     try {
-      await entersState(this.connection, VoiceConnectionStatus.Ready, 30_000);
+      await entersState(this.connection, VoiceConnectionStatus.Ready, 15_000);
+      console.log('[Voice] Connection ready!');
     } catch (err) {
+      const status = this.connection?.state?.status || 'unknown';
+      console.error(`[Voice] Failed to reach Ready state. Current status: ${status}`);
       this.connection.destroy();
       this.connection = null;
-      throw new Error('Could not connect to voice channel. Check my permissions!');
+      throw new Error(
+        `Failed to join voice channel (stuck at: ${status}). ` +
+        `Make sure I have Connect & Speak permissions in that channel, ` +
+        `and that the channel has no user limit blocking me.`
+      );
     }
 
     this.connection.subscribe(this.audioPlayer);
 
     this.connection.on(VoiceConnectionStatus.Disconnected, async () => {
+      console.log('[Voice] Disconnected — attempting recovery...');
       try {
         await Promise.race([
           entersState(this.connection, VoiceConnectionStatus.Signalling, 5_000),
           entersState(this.connection, VoiceConnectionStatus.Connecting, 5_000),
         ]);
+        console.log('[Voice] Recovery successful');
       } catch {
+        console.log('[Voice] Recovery failed — destroying connection');
         this.destroy();
       }
     });
@@ -115,7 +133,6 @@ class MusicPlayer {
         this.queue.push(...songs);
         return { playlist: true, count: songs.length, first: songs[0] };
       } else {
-        // Search YouTube
         const results = await playdl.search(query, { limit: 1, source: { youtube: 'video' } });
         if (!results.length) throw new Error('No results found for that search.');
         const v = results[0];
@@ -163,6 +180,7 @@ class MusicPlayer {
 
   async _stream(song) {
     try {
+      console.log(`[Stream] Streaming: ${song.title}`);
       const stream = await playdl.stream(song.url, { quality: 2 });
       const resource = createAudioResource(stream.stream, {
         inputType: stream.type,
@@ -216,9 +234,7 @@ class MusicPlayer {
     return false;
   }
 
-  skip() {
-    this.audioPlayer.stop();
-  }
+  skip() { this.audioPlayer.stop(); }
 
   stop() {
     this.queue = [];
@@ -248,13 +264,8 @@ class MusicPlayer {
     this.connection = null;
   }
 
-  get isPlaying() {
-    return this.audioPlayer.state.status === AudioPlayerStatus.Playing;
-  }
-
-  get isPaused() {
-    return this.audioPlayer.state.status === AudioPlayerStatus.Paused;
-  }
+  get isPlaying() { return this.audioPlayer.state.status === AudioPlayerStatus.Playing; }
+  get isPaused() { return this.audioPlayer.state.status === AudioPlayerStatus.Paused; }
 
   _formatDuration(sec) {
     if (!sec || sec === 0) return 'Live';
