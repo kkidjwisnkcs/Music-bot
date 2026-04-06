@@ -1,7 +1,7 @@
 {
   "name": "discord-music-bot",
-  "version": "4.1.0",
-  "description": "Discord music bot powered by DisTube v5 + yt-dlp",
+  "version": "4.5.0",
+  "description": "Discord music bot — DisTube v5 + SoundCloud primary + YouTube fallback",
   "main": "src/index.js",
   "scripts": {
     "start": "node --dns-result-order=ipv4first src/index.js",
@@ -11,11 +11,11 @@
     "discord.js": "^14.14.1",
     "distube": "^5.2.3",
     "@distube/yt-dlp": "^2.0.1",
-    "@discordjs/voice": "^0.19.2",
+    "@distube/soundcloud": "^2.0.0",
+    "@discordjs/voice": "^0.17.0",
     "tweetnacl": "^1.0.3",
     "opusscript": "^0.1.1",
-    "@distube/soundcloud": "^2.0.1",
-    "@distube/spotify": "^4.1.2"
+    "ffmpeg-static": "^5.2.0"
   },
   "engines": {
     "node": ">=18.0.0"

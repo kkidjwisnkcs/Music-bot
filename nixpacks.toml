@@ -1,9 +1,9 @@
 [phases.setup]
-nixPkgs = ["nodejs_20", "ffmpeg", "python3", "gcc", "gnumake"]
+nixPkgs = ["nodejs_20", "ffmpeg", "python311", "python311Packages.pip", "gcc", "gnumake"]
 
 [phases.install]
 cmds = [
-  "pip3 install yt-dlp --break-system-packages 2>/dev/null || pip install yt-dlp",
+  "pip install --quiet yt-dlp",
   "npm install --include=optional"
 ]
 
