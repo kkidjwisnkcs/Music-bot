@@ -1,11 +1,8 @@
 [phases.setup]
-nixPkgs = ["nodejs_20", "ffmpeg", "python311", "python311Packages.pip", "gcc", "gnumake"]
+nixPkgs = ["nodejs_20", "ffmpeg", "gcc", "gnumake", "libtool", "autoconf", "automake", "libsodium"]
 
 [phases.install]
-cmds = [
-  "pip install --quiet yt-dlp",
-  "npm install --include=optional"
-]
+cmds = ["npm install --include=optional"]
 
 [start]
 cmd = "node --dns-result-order=ipv4first src/index.js"

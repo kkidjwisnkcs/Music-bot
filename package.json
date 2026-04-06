@@ -1,20 +1,23 @@
 {
   "name": "discord-music-bot",
-  "version": "4.5.0",
-  "description": "Discord music bot — DisTube v5 + SoundCloud primary + YouTube fallback",
+  "version": "5.0.0",
+  "description": "Discord Music Bot — DisTube v5 + YouTube + SoundCloud + Spotify",
   "main": "src/index.js",
   "scripts": {
     "start": "node --dns-result-order=ipv4first src/index.js",
     "deploy": "node src/deploy-commands.js"
   },
   "dependencies": {
-    "discord.js": "^14.14.1",
-    "distube": "^5.2.3",
+    "discord.js": "^14.15.3",
+    "distube": "^5.0.2",
+    "@distube/youtube": "^1.0.4",
     "@distube/yt-dlp": "^2.0.1",
-    "@distube/soundcloud": "^2.0.0",
+    "@distube/soundcloud": "^2.0.3",
+    "@distube/spotify": "^2.0.2",
+    "@distube/direct-link": "^1.0.1",
     "@discordjs/voice": "^0.17.0",
-    "tweetnacl": "^1.0.3",
-    "opusscript": "^0.1.1",
+    "@discordjs/opus": "^0.9.0",
+    "sodium-native": "^4.1.1",
     "ffmpeg-static": "^5.2.0"
   },
   "engines": {
